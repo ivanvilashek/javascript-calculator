@@ -8,9 +8,7 @@ function Screen() {
 
   return (
     <Textfit className="screen" id="display" max={70} mode="single">
-      {calc.out > 1
-        ? calc.out.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-        : calc.out}
+      {calc.num ? calc.num : calc.res}
     </Textfit>
   );
 }

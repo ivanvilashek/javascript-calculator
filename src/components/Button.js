@@ -34,30 +34,31 @@ const getId = (value) => {
     '/': 'divide',
     '.': 'decimal',
     '=': 'equals',
+    C: 'clear',
   };
 
   return idName[value];
 };
 
+const toLocaleString = (num) =>
+  String(num).replace(/(?<!\..*)(\d)(?=(?:\d{3})+(?:\.|$))/g, '$1 ');
+
+const removeSpaces = (num) => num.toString().replace(/\s/g, '');
+
 function Button({ value }) {
   const { calc, setCalc } = useContext(CalcContext);
 
   const handleClickButton = () => {
-    const numberString = value.toString();
-
-    let numberValue = '';
-    if (numberString === '0' && calc.num === 0) {
-      numberValue = '0';
-    } else {
-      numberValue = +(calc.num + numberString);
-      if (numberValue.toString().length > 10) return;
+    if (calc.num.toString().length <= 10) {
+      setCalc({
+        ...calc,
+        num:
+          removeSpaces(calc.num) % 1 === 0 && !calc.num.toString().includes('.')
+            ? toLocaleString(Number(removeSpaces(calc.num + value)))
+            : toLocaleString(calc.num + value),
+        res: !calc.sign ? 0 : calc.res,
+      });
     }
-
-    setCalc({
-      ...calc,
-      num: numberValue,
-      out: numberValue,
-    });
   };
 
   const commaClick = () => {
@@ -68,36 +69,46 @@ function Button({ value }) {
   };
 
   const resetClick = () => {
-    setCalc({ num: 0, res: 0, out: 0, sign: '' });
+    setCalc({ num: 0, res: 0, sign: '' });
   };
+
+  const math = (a, b, sign) =>
+    sign === '+' ? a + b : sign === '-' ? a - b : sign === 'x' ? a * b : a / b;
 
   const signClick = () => {
     setCalc({
+      ...calc,
       sign: value,
-      res: !calc.res && calc.num ? calc.num : calc.res,
-      out: !calc.res && calc.num ? calc.num : calc.res,
+      res: !calc.num
+        ? calc.res
+        : !calc.res
+        ? calc.num
+        : toLocaleString(
+            math(
+              Number(removeSpaces(calc.res)),
+              Number(removeSpaces(calc.num)),
+              calc.sign
+            )
+          ),
       num: 0,
     });
   };
 
   const equalsClick = () => {
     if (calc.res && calc.num) {
-      const math = (a, b, sign) => {
-        const result = {
-          '+': (a, b) => a + b,
-          '-': (a, b) => a - b,
-          x: (a, b) => a * b,
-          '/': (a, b) => (b !== '0' ? a / b : 'Error'),
-        };
-
-        return result[sign](a, b);
-      };
-
       setCalc({
-        res: math(calc.res, calc.num, calc.sign),
-        out: math(calc.res, calc.num, calc.sign),
-        sign: calc.sign,
-        num: calc.num,
+        res:
+          calc.num === 0 && calc.sign === '/'
+            ? 'Error'
+            : toLocaleString(
+                math(
+                  Number(removeSpaces(calc.res)),
+                  Number(removeSpaces(calc.num)),
+                  calc.sign
+                )
+              ),
+        sign: '',
+        num: 0,
       });
     }
   };
@@ -106,16 +117,15 @@ function Button({ value }) {
     setCalc({
       num: calc.num / 100,
       res: calc.res / 100,
-      out: calc.out / 100,
       sign: '',
     });
   };
 
   const invertClick = () => {
     setCalc({
-      num: calc.num * -1,
-      res: calc.res * -1,
-      out: calc.out * -1,
+      ...calc,
+      num: calc.num ? toLocaleString(removeSpaces(calc.num) * -1) : 0,
+      res: calc.res ? toLocaleString(removeSpaces(calc.res) * -1) : 0,
       sign: '',
     });
   };
